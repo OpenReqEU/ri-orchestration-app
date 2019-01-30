@@ -1,0 +1,53 @@
+---
+swagger: "2.0"
+info:
+  description: This API orchestrates all micro-services related to app store data.
+  version: "1.0.0"
+  title: App Store Data orchestrator
+  contact:
+    email: stanik@informatik.uni-hamburg.de
+host: 217.172.12.199:9702
+schemes:
+- http
+paths:
+  /hitec/orchestration/app/observe/google-play/package-name/{package_name}/interval/{interval}:
+    post:
+      description: |
+        Set a package name of an app from the Google Play store that should be observed and crawled in a given interval. This microservices depends on that the following microservices are running - ri-analytics-classification-google-play-review, ri-collection-explicit-feedback-google-play-review, ri-storage-app.
+      operationId: postObserveAppGooglePlay
+      produces:
+      - application/json
+      parameters:
+      - name: package_name
+        in: path
+        description: the unique package name of the app.
+        required: true
+        type: string
+      - name: interval
+        in: path
+        description: the interval in which app reviews should be crawled, processed and stored. For example daily/weekly/monthly
+        required: true
+        type: string
+      responses:
+        200:
+          description: successfully orchestrated the observation process..
+        400:
+          description: bad input parameter or no tweet could be retrieved.
+  /hitec/orchestration/app/observe/google-play/package-name/{package_name}:
+    post:
+      description: |
+        Set a package name of an opp from the Google Play store that should be crawled, processed, and stored once.
+      operationId: postProcessAppGooglePlay
+      produces:
+      - application/json
+      parameters:
+      - name: package_name
+        in: path
+        description: the unique package name of the app.
+        required: true
+        type: string
+      responses:
+        200:
+          description: successfully orchestrated the observation process..
+        400:
+          description: bad input parameter or no tweet could be retrieved.
