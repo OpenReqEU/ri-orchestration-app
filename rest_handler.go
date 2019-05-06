@@ -14,19 +14,19 @@ var baseURL = os.Getenv("BASE_URL")
 
 const (
 	// analytics layer
-	endpointPostClassifyAppReviews = "/ri-analytics-classification-google-play-review/"
+	endpointPostClassifyAppReviews = "/ri-analytics-classification-google-play-review/hitec/classify/domain/google-play-reviews/"
 
 	// collection layer
-	endpointPostCrawlAppReviewsGooglePlay = "/ri-collection-explicit-feedback-google-play-review/%s/limit/%d"
+	endpointPostCrawlAppReviewsGooglePlay = "/ri-collection-explicit-feedback-google-play-review/hitec/crawl/app-reviews/google-play/%s/limit/%d"
 	// collection layer
-	endpointPostCrawlAppPageGooglePlay = "/ri-collection-explicit-feedback-google-play-page/%s"
+	endpointPostCrawlAppPageGooglePlay = "/ri-collection-explicit-feedback-google-play-page/hitec/crawl/app-page/google-play/%s"
 
 	// storage layer
-	endpointPostObserveAppGooglePlay            = "/ri-storage-app/observe/app/google-play/package-name/%s/interval/%s"
-	endpointGetObservablesGooglePlay            = "/ri-storage-app/observable/google-play"
-	endpointPostAppReviewGooglePlay             = "/ri-storage-app/store/app-review/google-play/"
-	endpointPostAppPageGooglePlay               = "/ri-storage-app/store/app-page/google-play/"
-	endpointPosNonExistingtAppReviewsGooglePlay = "/ri-storage-app/non-existing/app-review/google-play"
+	endpointPostObserveAppGooglePlay            = "/ri-storage-app/hitec/repository/app/observe/app/google-play/package-name/%s/interval/%s"
+	endpointGetObservablesGooglePlay            = "/ri-storage-app/hitec/repository/app/observable/google-play"
+	endpointPostAppReviewGooglePlay             = "/ri-storage-app/hitec/repository/app/store/app-review/google-play/"
+	endpointPostAppPageGooglePlay               = "/ri-storage-app/hitec/repository/app/store/app-page/google-play/"
+	endpointPosNonExistingtAppReviewsGooglePlay = "/ri-storage-app/hitec/repository/app/non-existing/app-review/google-play"
 )
 
 // RESTPostStoreObserveAppGooglePlay returns ok
