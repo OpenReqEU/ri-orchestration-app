@@ -2,10 +2,14 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"log"
 )
@@ -29,12 +33,36 @@ const (
 	endpointPosNonExistingtAppReviewsGooglePlay = "/ri-storage-app/hitec/repository/app/non-existing/app-review/google-play"
 )
 
+var client = getHTTPClient()
+
+func getHTTPClient() *http.Client {
+	pwd, _ := os.Getwd()
+	caCert, err := ioutil.ReadFile(pwd + "/ca_chain.crt")
+	timeout := time.Duration(2 * time.Minute)
+	if err != nil {
+		log.Fatal(err)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+		},
+		Timeout: timeout,
+	}
+
+	return client
+}
+
 // RESTPostStoreObserveAppGooglePlay returns ok
 func RESTPostStoreObserveAppGooglePlay(packageName string, interval string) bool {
 	for connectionTries := 3; connectionTries > 0; connectionTries-- {
 		endpoint := fmt.Sprintf(endpointPostObserveAppGooglePlay, packageName, interval)
 		url := baseURL + endpoint
-		res, err := http.Post(url, "custom", nil)
+		res, err := client.Post(url, "custom", nil)
 		if err != nil {
 			log.Printf("ERR %v\n", err)
 			continue
@@ -51,7 +79,7 @@ func RESTPostStoreObserveAppGooglePlay(packageName string, interval string) bool
 func RESTGetObservablesGooglePlay() []ObservableGooglePlay {
 	var obserables []ObservableGooglePlay
 
-	res, err := http.Get(baseURL + endpointGetObservablesGooglePlay)
+	res, err := client.Get(baseURL + endpointGetObservablesGooglePlay)
 	if err != nil {
 		fmt.Println("ERR", err)
 		return obserables
@@ -71,7 +99,7 @@ func RESTGetAppPageGooglePlay(packageName string) AppPageGooglePlay {
 	var appPage AppPageGooglePlay
 
 	endpoint := fmt.Sprintf(endpointPostCrawlAppPageGooglePlay, packageName)
-	res, err := http.Get(baseURL + endpoint)
+	res, err := client.Get(baseURL + endpoint)
 	if err != nil {
 		fmt.Println("ERR", err)
 		return appPage
@@ -91,7 +119,7 @@ func RESTGetAppReviewsGooglePlay(packageName string, limit int) []AppReviewGoogl
 	var reviews []AppReviewGooglePlay
 
 	endpoint := fmt.Sprintf(endpointPostCrawlAppReviewsGooglePlay, packageName, limit)
-	res, err := http.Get(baseURL + endpoint)
+	res, err := client.Get(baseURL + endpoint)
 	if err != nil {
 		fmt.Println("ERR", err)
 		return reviews
@@ -112,7 +140,7 @@ func RESTPostProcessAppReviewsGooglePlay(reviews []AppReviewGooglePlay) []AppRev
 
 	js := new(bytes.Buffer)
 	json.NewEncoder(js).Encode(reviews)
-	res, err := http.Post(baseURL+endpointPostClassifyAppReviews, "application/json; charset=utf-8", js)
+	res, err := client.Post(baseURL+endpointPostClassifyAppReviews, "application/json; charset=utf-8", js)
 	if err != nil {
 		fmt.Println("ERR", err)
 		return appReviews
@@ -131,7 +159,7 @@ func RESTPostProcessAppReviewsGooglePlay(reviews []AppReviewGooglePlay) []AppRev
 func RESTPostStoreProcessedAppReviewsGooglePlay(appReviews []AppReviewGooglePlay) bool {
 	js := new(bytes.Buffer)
 	json.NewEncoder(js).Encode(reviews)
-	_, err := http.Post(baseURL+endpointPostAppReviewGooglePlay, "application/json; charset=utf-8", js)
+	_, err := client.Post(baseURL+endpointPostAppReviewGooglePlay, "application/json; charset=utf-8", js)
 	if err != nil {
 		fmt.Println("ERR", err)
 		return false
@@ -144,7 +172,7 @@ func RESTPostStoreProcessedAppReviewsGooglePlay(appReviews []AppReviewGooglePlay
 func RESTPostStoreAppPageGooglePlay(appPage AppPageGooglePlay) bool {
 	js := new(bytes.Buffer)
 	json.NewEncoder(js).Encode(appPage)
-	_, err := http.Post(baseURL+endpointPostAppPageGooglePlay, "application/json; charset=utf-8", js)
+	_, err := client.Post(baseURL+endpointPostAppPageGooglePlay, "application/json; charset=utf-8", js)
 	if err != nil {
 		fmt.Println("ERR", err)
 		return false
@@ -159,7 +187,7 @@ func RESTPostNonExistingAppReviewsGooglePlay(appReviews []AppReviewGooglePlay) [
 
 	js := new(bytes.Buffer)
 	json.NewEncoder(js).Encode(appReviews)
-	res, err := http.Post(baseURL+endpointPosNonExistingtAppReviewsGooglePlay, "application/json; charset=utf-8", js)
+	res, err := client.Post(baseURL+endpointPosNonExistingtAppReviewsGooglePlay, "application/json; charset=utf-8", js)
 	if err != nil {
 		fmt.Println("ERR", err)
 		return nonExistingAppReviews
