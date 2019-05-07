@@ -6,12 +6,13 @@ This microservice was created as a result of the OpenReq project funded by the E
 === What does the microservice do
 This microservice is responsible for the coordination of all microservices that belong to the domain of app store data. The main goal of this microservice is to define apps that should be continuously observed by OpenReq. In its current state, the microservice first initiates a recurring crawling, classification, and finally storing process of app reviews that mention a given account. To achieve this, this miroservice calls the following microservices of OpenReq:
 
-- link:https://github.com/OpenReqEU/https://github.com/OpenReqEU/ri-collection-explicit-feedback-google-play-page[ri-collection-explicit-feedback-google-play-page]
+- Crawler: link:https://github.com/OpenReqEU/https://github.com/OpenReqEU/ri-collection-explicit-feedback-google-play-page[ri-collection-explicit-feedback-google-play-page]
 
-- link:https://github.com/OpenReqEU/ri-collection-explicit-feedback-google-play-review[ri-collection-explicit-feedback-google-play-review]
-- link:https://github.com/OpenReqEU/ri-storage-app[ri-storage-app]
+- Crawler: link:https://github.com/OpenReqEU/ri-collection-explicit-feedback-google-play-review[ri-collection-explicit-feedback-google-play-review]
 
-- link:https://github.com/OpenReqEU/ri-analytics-classification-google-play-review[ri-analytics-classification-google-play-review]
+- Storage: link:https://github.com/OpenReqEU/ri-storage-app[ri-storage-app]
+
+- Classifier: link:https://github.com/OpenReqEU/ri-analytics-classification-google-play-review[ri-analytics-classification-google-play-review]
 
 === Which technologies are used
 - Go (-> https://github.com/golang/go)
@@ -23,12 +24,14 @@ This microservice is responsible for the coordination of all microservices that 
 
 - Define a shared base url of all the three previously mentioned microservices called  *BASE_URL*. BASE_URL will be used as an environment variable in the Docker run command (See following section).
 
+- Additionally, an SSL certificate must be mounted to the docker image during the run build (see the following example)
+
 
 Run the following commands to start the microservice:
 
 . docker build -t orchestrator_app .
 
-. docker run -e "BASE_URL=<BASE_URL_OF_THE_REQUIRED_MICROSERVICES>" -p 9702:9702 orchestrator_app
+. docker run -v "<path_to>/ca_chain.crt:/go/src/app/ca_chain.crt" -e "BASE_URL=<BASE_URL_OF_THE_REQUIRED_MICROSERVICES>" -p 9702:9702 orchestrator_app
 
 === How to use it (high-level description)
 The API is documented by using Swagger2:
