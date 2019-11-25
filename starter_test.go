@@ -1,15 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
-
-	"github.com/robfig/cron"
 
 	"github.com/gorilla/mux"
 )
@@ -31,13 +28,7 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	fmt.Println("--- --- setup")
-	setupRouter()
-}
-
-func setupRouter() {
-	router = mux.NewRouter()
-	router.HandleFunc("/hitec/orchestration/app/observe/google-play/package-name/{package_name}/interval/{interval}", MockPostObserveAppGooglePlay).Methods("POST")
-	router.HandleFunc("/hitec/orchestration/app/process/google-play/package-name/{package_name}", MockPostProcessAppGooglePlay).Methods("POST")
+	router = makeRouter()
 }
 
 func tearDown() {
@@ -56,7 +47,6 @@ func buildRequest(method, endpoint string, payload io.Reader, t *testing.T) *htt
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
-
 	return rr
 }
 
@@ -90,38 +80,6 @@ func TestPostObserveAppGooglePlay(t *testing.T) {
 	}
 }
 
-func MockPostObserveAppGooglePlay(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	packageName := params["package_name"]
-	interval := params["interval"] // possible intervals: minutely, hourly, daily, monthly
-
-	var ok bool
-	allowedSpcialIntervals := map[string]bool{
-		"minutely": true,
-		"hourly":   true,
-		"daily":    true,
-		"weekly":   true,
-		"monthly":  true,
-	}
-	_, err := cron.Parse(interval)
-	if packageName == "" || (err != nil && !allowedSpcialIntervals[interval]) {
-		ok = false
-	} else {
-		ok = true
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if !ok {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(Response{Status: false, Message: "storage layer unreachable"})
-		return
-	}
-
-	fmt.Printf("1.1 restart observation \n")
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(Response{Status: true, Message: "observation successfully initiated"})
-}
-
 func TestPostProcessTweets(t *testing.T) {
 	fmt.Println("start TestPostProcessTweets")
 	var method = "POST"
@@ -149,22 +107,4 @@ func TestPostProcessTweets(t *testing.T) {
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Status code differs. Expected %d .\n Got %d instead", http.StatusOK, status)
 	}
-}
-
-func MockPostProcessAppGooglePlay(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	packageName := params["package_name"]
-
-	var ok = packageName != ""
-	w.Header().Set("Content-Type", "application/json")
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{Status: false, Message: "account name or language are empty"})
-		return
-	}
-
-	fmt.Printf("1.1 restart observation \n")
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(Response{Status: true, Message: "tweets successfully processed"})
 }

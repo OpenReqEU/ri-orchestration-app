@@ -13,12 +13,14 @@ import (
 
 func main() {
 	log.SetOutput(os.Stdout)
+	log.Fatal(http.ListenAndServe(":9702", makeRouter()))
+}
 
+func makeRouter() *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/hitec/orchestration/app/observe/google-play/package-name/{package_name}/interval/{interval}", postObserveAppGooglePlay).Methods("POST")
 	router.HandleFunc("/hitec/orchestration/app/process/google-play/package-name/{package_name}", postProcessAppGooglePlay).Methods("POST")
-
-	log.Fatal(http.ListenAndServe(":9702", router))
+	return router
 }
 
 /*
