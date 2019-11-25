@@ -85,10 +85,16 @@ func mockStorageApp(r *mux.Router) {
 
 	// endpointGetObservablesGooglePlay = "/ri-storage-app/hitec/repository/app/observable/google-play"
 	r.HandleFunc("/ri-storage-app/hitec/repository/app/observable/google-play", func(w http.ResponseWriter, request *http.Request) {
-		respond(w, http.StatusOK, []interface{}{map[string]string{
-			"package_name": "eu.openreq",
-			"interval":     "midnight",
-		}})
+		respond(w, http.StatusOK, []interface{}{
+			map[string]string{
+				"package_name": "eu.openreq",
+				"interval":     "30 3-6,20-23 * * *",
+			},
+			map[string]string{
+				"package_name": "com.twitter.android",
+				"interval":     "daily",
+			},
+		})
 	})
 
 	// endpointPostAppReviewGooglePlay = "/ri-storage-app/hitec/repository/app/store/app-review/google-play/"
@@ -193,10 +199,12 @@ func assertFailure(t *testing.T, rr *httptest.ResponseRecorder) {
 func TestPostObserveAppGooglePlay(t *testing.T) {
 	ep := endpoint{method: "POST", url: "/hitec/orchestration/app/observe/google-play/package-name/%s/interval/%s"}
 	assertFailure(t, ep.withVars("", "fail").mustExecuteRequest(nil))
-	assertSuccess(t, ep.withVars("eu.openreq", "monthly").mustExecuteRequest(nil))
+	assertSuccess(t, ep.withVars("com.whatsapp", "monthly").mustExecuteRequest(nil))
+	assertSuccess(t, ep.withVars("com.whatsapp", "monthly").mustExecuteRequest(nil)) // noop; re-adding the same observable
+	assertSuccess(t, ep.withVars("com.whatsapp", "daily").mustExecuteRequest(nil))   // update the observable
 }
 
-func TestPostProcessTweets(t *testing.T) {
+func TestPostProcessAppGooglePlay(t *testing.T) {
 	ep := endpoint{method: "POST", url: "/hitec/orchestration/app/process/google-play/package-name/%s"}
 	assertFailure(t, ep.withVars("").mustExecuteRequest(nil))
 	assertSuccess(t, ep.withVars("eu.openreq").mustExecuteRequest(nil))
