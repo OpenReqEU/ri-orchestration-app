@@ -15,13 +15,18 @@ func startObsevation() {
 	for packageName := range observableAppsGooglePlay.m {
 		observerInterval := getObserverInterval(observableAppsGooglePlay.m[packageName])
 		observer.AddFunc(observerInterval, func() {
-			crawledAppReviews := crawlObservableApps(packageName)
-			nonExistingAppReviews := RESTPostNonExistingAppReviewsGooglePlay(crawledAppReviews) // just consider app reviews that are not processed yet
-			processedAppReviews := processObservableApps(nonExistingAppReviews)
-			storeProcessedApps(processedAppReviews)
+			updateApp(packageName)
 		})
 	}
 	observer.Start()
+}
+
+func updateApp(packageName string) {
+	crawledAppReviews := crawlObservableApps(packageName)
+	nonExistingAppReviews := RESTPostNonExistingAppReviewsGooglePlay(crawledAppReviews)
+	// just consider app reviews that are not processed yet
+	processedAppReviews := processObservableApps(nonExistingAppReviews)
+	storeProcessedApps(processedAppReviews)
 }
 
 func stopObservation() {
@@ -35,18 +40,17 @@ func loadObservableApps() {
 }
 
 func getObserverInterval(interval string) string {
-	switch interval {
-	case "minutely":
-		return "0 * * * * *"
-	case "hourly":
-		return "@hourly"
-	case "daily":
-		return "@daily"
-	case "weekly":
-		return "@weekly"
-	case "monthly":
-		return "@monthly"
-	default:
+	specialIntervals := map[string]string{
+		"minutely": "* * * * *",
+		"hourly":   "@hourly",
+		"daily":    "@daily",
+		"weekly":   "@weekly",
+		"monthly":  "@monthly",
+	}
+
+	if specialInterval, ok := specialIntervals[interval]; ok {
+		return specialInterval
+	} else {
 		return interval // allows custom intervals to the cron job specification (https://godoc.org/github.com/robfig/cron) might thorw an error if the custom interval is wrong
 	}
 }

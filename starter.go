@@ -13,12 +13,14 @@ import (
 
 func main() {
 	log.SetOutput(os.Stdout)
+	log.Fatal(http.ListenAndServe(":9702", makeRouter()))
+}
 
+func makeRouter() *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/hitec/orchestration/app/observe/google-play/package-name/{package_name}/interval/{interval}", postObserveAppGooglePlay).Methods("POST")
 	router.HandleFunc("/hitec/orchestration/app/process/google-play/package-name/{package_name}", postProcessAppGooglePlay).Methods("POST")
-
-	log.Fatal(http.ListenAndServe(":9702", router))
+	return router
 }
 
 /*
@@ -85,7 +87,11 @@ func postProcessAppGooglePlay(w http.ResponseWriter, r *http.Request) {
 
 	//  5. store processed app reviews
 	fmt.Println("5. store processed app reviews")
-	RESTPostStoreProcessedAppReviewsGooglePlay(processedAppReviess)
+	if ok := RESTPostStoreProcessedAppReviewsGooglePlay(processedAppReviess); !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(Response{Status: false, Message: "storage service is not available"})
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(Response{Status: true, Message: "crawled, processed, and stored app reviews"})

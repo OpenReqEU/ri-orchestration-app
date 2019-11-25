@@ -1,9 +1,5 @@
 package main
 
-import (
-	"strings"
-)
-
 /*
  * set implementation
  */
@@ -22,22 +18,4 @@ func NewSet() *set {
 
 func (s *set) Add(value string, interval string) {
 	s.m[value] = interval
-}
-
-func (s *set) Remove(value string) {
-	delete(s.m, value)
-}
-
-func (s *set) Contains(value string) bool {
-	_, c := s.m[value]
-	return c
-}
-
-func (s *set) String() string {
-	var vals []string
-	for val := range s.m {
-		vals = append(vals, val+"|"+s.m[val]+"\t")
-	}
-
-	return strings.Join(vals, " ")
 }
