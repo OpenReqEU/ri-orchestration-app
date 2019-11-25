@@ -14,6 +14,7 @@ import (
 )
 
 var router *mux.Router
+var stopTestServer func()
 
 func TestMain(m *testing.M) {
 	fmt.Println("--- Start Tests")
@@ -31,10 +32,110 @@ func TestMain(m *testing.M) {
 func setup() {
 	fmt.Println("--- --- setup")
 	router = makeRouter()
+	setupMockClient()
+}
+
+func setupMockClient() {
+	fmt.Println("Mocking client")
+	handler := makeMockHandler()
+	s := httptest.NewServer(handler)
+	stopTestServer = s.Close
+	baseURL = s.URL
+}
+
+func makeMockHandler() http.Handler {
+	r := mux.NewRouter()
+	mockAnalyticsClassificationGooglePlayReview(r)
+	mockCollectionExplicitFeedbackGooglePlayReview(r)
+	mockCollectionExplicitFeedbackGooglePlayPage(r)
+	mockStorageApp(r)
+	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(errors.Errorf("Service method not mocked: %s", r.URL))
+		w.WriteHeader(http.StatusNotFound)
+	})
+	return r
+}
+
+func mockAnalyticsClassificationGooglePlayReview(r *mux.Router) {
+	// endpointPostClassifyAppReviews = "/ri-analytics-classification-google-play-review/hitec/classify/domain/google-play-reviews/"
+	r.HandleFunc("/ri-analytics-classification-google-play-review/hitec/classify/domain/google-play-reviews/", func(w http.ResponseWriter, request *http.Request) {
+		respond(w, http.StatusOK, `[]`)
+	})
+}
+
+func mockCollectionExplicitFeedbackGooglePlayReview(r *mux.Router) {
+	// endpointPostCrawlAppReviewsGooglePlay = "/ri-collection-explicit-feedback-google-play-review/hitec/crawl/app-reviews/google-play/%s/limit/%d"
+	r.HandleFunc("/ri-collection-explicit-feedback-google-play-review/hitec/crawl/app-reviews/google-play/{package_name}/limit/{limit}", func(w http.ResponseWriter, request *http.Request) {
+		respond(w, http.StatusOK, `[]`)
+	})
+}
+
+func mockCollectionExplicitFeedbackGooglePlayPage(r *mux.Router) {
+	// endpointPostCrawlAppPageGooglePlay = "/ri-collection-explicit-feedback-google-play-page/hitec/crawl/app-page/google-play/%s"
+	r.HandleFunc("/ri-collection-explicit-feedback-google-play-page/hitec/crawl/app-page/google-play/{package_name}", func(w http.ResponseWriter, request *http.Request) {
+		respond(w, http.StatusOK, `[]`)
+	})
+}
+
+func mockStorageApp(r *mux.Router) {
+	// endpointPostObserveAppGooglePlay = "/ri-storage-app/hitec/repository/app/observe/app/google-play/package-name/%s/interval/%s"
+	r.HandleFunc("/ri-storage-app/hitec/repository/app/observe/app/google-play/package-name/{package_name}/interval/{interval}", func(w http.ResponseWriter, request *http.Request) {
+		respond(w, http.StatusOK, nil)
+	})
+
+	// endpointGetObservablesGooglePlay = "/ri-storage-app/hitec/repository/app/observable/google-play"
+	r.HandleFunc("/ri-storage-app/hitec/repository/app/observable/google-play", func(w http.ResponseWriter, request *http.Request) {
+		respond(w, http.StatusOK, []interface{}{map[string]string{
+			"package_name": "eu.openreq",
+			"interval":     "midnight",
+		}})
+	})
+
+	// endpointPostAppReviewGooglePlay = "/ri-storage-app/hitec/repository/app/store/app-review/google-play/"
+	r.HandleFunc("/ri-storage-app/hitec/repository/app/store/app-review/google-play/", func(w http.ResponseWriter, request *http.Request) {
+		respond(w, http.StatusOK, nil)
+	})
+
+	// endpointPostAppPageGooglePlay = "/ri-storage-app/hitec/repository/app/store/app-page/google-play/"
+	r.HandleFunc("/ri-storage-app/hitec/repository/app/store/app-page/google-play/", func(w http.ResponseWriter, request *http.Request) {
+		respond(w, http.StatusOK, nil)
+	})
+
+	// endpointPosNonExistingtAppReviewsGooglePlay = "/ri-storage-app/hitec/repository/app/non-existing/app-review/google-play"
+	r.HandleFunc("/ri-storage-app/hitec/repository/app/non-existing/app-review/google-play", func(w http.ResponseWriter, request *http.Request) {
+		respond(w, http.StatusOK, `[]`)
+	})
+}
+
+func respond(writer http.ResponseWriter, statusCode int, body interface{}) {
+	var bodyData []byte
+	var err error
+	if body == nil {
+		bodyData = make([]byte, 0)
+	} else {
+		switch body.(type) {
+		case string:
+			bodyData = []byte(body.(string))
+		case []byte:
+			bodyData = body.([]byte)
+		default:
+			bodyData, err = json.Marshal(body)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	writer.WriteHeader(statusCode)
+
+	if _, err = writer.Write(bodyData); err != nil {
+		panic(err)
+	}
 }
 
 func tearDown() {
 	fmt.Println("--- --- tear down")
+	stopTestServer()
 }
 
 type endpoint struct {
