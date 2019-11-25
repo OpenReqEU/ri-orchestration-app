@@ -14,6 +14,7 @@ import (
 )
 
 var router *mux.Router
+var induceServerError = false
 var stopTestServer func()
 
 func TestMain(m *testing.M) {
@@ -45,6 +46,16 @@ func setupMockClient() {
 
 func makeMockHandler() http.Handler {
 	r := mux.NewRouter()
+	r.Use(func(handler http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+			if !induceServerError {
+				handler.ServeHTTP(w, request)
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+		})
+	})
+
 	mockAnalyticsClassificationGooglePlayReview(r)
 	mockCollectionExplicitFeedbackGooglePlayReview(r)
 	mockCollectionExplicitFeedbackGooglePlayPage(r)
@@ -197,15 +208,23 @@ func assertFailure(t *testing.T, rr *httptest.ResponseRecorder) {
 }
 
 func TestPostObserveAppGooglePlay(t *testing.T) {
+	induceServerError = false
 	ep := endpoint{method: "POST", url: "/hitec/orchestration/app/observe/google-play/package-name/%s/interval/%s"}
 	assertFailure(t, ep.withVars("", "fail").mustExecuteRequest(nil))
 	assertSuccess(t, ep.withVars("com.whatsapp", "monthly").mustExecuteRequest(nil))
 	assertSuccess(t, ep.withVars("com.whatsapp", "monthly").mustExecuteRequest(nil)) // noop; re-adding the same observable
 	assertSuccess(t, ep.withVars("com.whatsapp", "daily").mustExecuteRequest(nil))   // update the observable
+
+	induceServerError = true
+	assertFailure(t, ep.withVars("com.whatsapp", "daily").mustExecuteRequest(nil))
 }
 
 func TestPostProcessAppGooglePlay(t *testing.T) {
+	induceServerError = false
 	ep := endpoint{method: "POST", url: "/hitec/orchestration/app/process/google-play/package-name/%s"}
 	assertFailure(t, ep.withVars("").mustExecuteRequest(nil))
+	assertSuccess(t, ep.withVars("eu.openreq").mustExecuteRequest(nil))
+
+	induceServerError = true
 	assertSuccess(t, ep.withVars("eu.openreq").mustExecuteRequest(nil))
 }

@@ -87,7 +87,11 @@ func postProcessAppGooglePlay(w http.ResponseWriter, r *http.Request) {
 
 	//  5. store processed app reviews
 	fmt.Println("5. store processed app reviews")
-	RESTPostStoreProcessedAppReviewsGooglePlay(processedAppReviess)
+	if ok := RESTPostStoreProcessedAppReviewsGooglePlay(processedAppReviess); !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(Response{Status: false, Message: "storage service is not available"})
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(Response{Status: true, Message: "crawled, processed, and stored app reviews"})
